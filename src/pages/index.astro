@@ -2,11 +2,32 @@
 import Layout from "./layouts/Layout.astro";
 ---
 <Layout title="Welcome — Astrolab">
-  <div class="container text-center">
-    <h1 class="mb-4">Welcome to Astrolab</h1>
-    <p class="lead">A tiny Astro demo. Click below to play the asteroid game.</p>
-    <a class="btn btn-primary btn-lg" href="/pages">Play the game →</a>
-    <hr class="bg-light w-50" />
-    <p class="text-muted small mt-3">If the game doesn't load, open <code>/pages</code> in your browser.</p>
+  <div class="d-flex justify-content-center py-5" style="width:100%;">
+    <div class="card bg-white bg-opacity-5 border-0 shadow-sm p-4" style="max-width:720px; width:100%;">
+      <div class="text-center">
+        <div id="rocket" class="display-4 mb-2">🚀</div>
+        <h1 class="h3 mb-2">Welcome to Astrolab</h1>
+        <p class="lead text-muted mb-4">A tiny Astro demo. Click below to play the asteroid game.</p>
+
+        <div class="d-flex justify-content-center gap-2 mb-3">
+          <a class="btn btn-primary btn-lg" href="/pages">Play the game →</a>
+        </div>
+
+        <hr class="bg-light w-50 " />
+
+        <p class="text-muted small mt-3">If the game doesn't load, open <code>/pages</code> in your browser.</p>
+      </div>
+    </div>
   </div>
+
+  <style>
+    #rocket { cursor: default; transition: transform .28s cubic-bezier(.2,.8,.2,1); }
+    #rocket:hover { transform: translateY(-6px) rotate(-6deg); }
+
+    .card { transition: transform .18s ease, box-shadow .18s ease; }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+
+    a.btn { transition: transform .12s ease, box-shadow .12s ease; }
+    a.btn:active { transform: translateY(1px) scale(.995); }
+  </style>
 </Layout>
