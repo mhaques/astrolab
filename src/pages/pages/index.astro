@@ -1,0 +1,57 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Astro Mini Game">
+  <div class="container text-center">
+    <h1 class="mb-4">🚀 Click the Asteroid!</h1>
+    <p class="lead">Score points by clicking the moving asteroid before it disappears.</p>
+    <canvas id="gameCanvas" width="600" height="400" class="border border-light rounded shadow-lg"></canvas>
+    <p class="mt-3 fs-4">Score: <span id="score">0</span></p>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let asteroid = { x: 100, y: 100, size: 40 };
+    let score = 0;
+
+    function drawAsteroid() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.arc(asteroid.x, asteroid.y, asteroid.size, 0, Math.PI * 2);
+      ctx.fillStyle = "#ff9933";
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.stroke();
+    }
+
+    function moveAsteroid() {
+      asteroid.x = Math.random() * (canvas.width - asteroid.size * 2) + asteroid.size;
+      asteroid.y = Math.random() * (canvas.height - asteroid.size * 2) + asteroid.size;
+      drawAsteroid();
+    }
+
+    canvas.addEventListener("click", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      const dist = Math.sqrt(
+        (clickX - asteroid.x) ** 2 + (clickY - asteroid.y) ** 2
+      );
+
+      if (dist < asteroid.size) {
+        score++;
+        document.getElementById("score").textContent = score;
+        moveAsteroid();
+      }
+    });
+
+    // Initial draw
+    drawAsteroid();
+    // Move asteroid every 2 seconds
+    setInterval(moveAsteroid, 2000);
+  </script>
+</Layout>
