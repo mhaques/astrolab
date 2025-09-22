@@ -1,11 +1,11 @@
 ---
+import "../styles/global.css";
 const { title = "Astro Game Demo" } = Astro.props;
 ---
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>{title}</title>
-    <link rel="stylesheet" href="/bootstrap.min.css" />
   </head>
   <body class="bg-dark text-light d-flex flex-column align-items-center justify-content-center min-vh-100">
     <slot />
