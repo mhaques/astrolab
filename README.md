@@ -75,7 +75,7 @@ npm run preview
 ## 🔗 Links
 
 - GitHub Repo: [mhaques/astrolab](https://github.com/mhaques/astrolab)  
-- Live Demo: https://astrolabgame.netlify.com 
+- Live Demo: [here!](https://astrolabgame.netlify.app)
 
 ---
 
