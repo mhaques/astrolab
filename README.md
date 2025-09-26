@@ -92,5 +92,4 @@ Contributions are welcome! Ideas include:
 
 ## 📜 License
 
-This project is open source and free to use.  
-You can add an official license (e.g. MIT) if you want to specify usage terms.
+This project is open source and free to use.
