@@ -11,45 +11,62 @@ import Layout from "../layouts/Layout.astro";
     >
       <h1 class="text-3xl font-bold text-white mb-3">🚀 Click the Asteroid!</h1>
       <p class="text-lg text-slate-300 mb-4">
-        Score points by clicking the moving asteroid before it disappears.
+        Avoid space debris and click asteroids to score points!
       </p>
 
-      <!-- Game Mode Selection -->
-      <div class="flex justify-center gap-3 mb-4" role="radiogroup" aria-label="Game mode selection">
+      <!-- Game Rules -->
+      <div id="gameRules" class="mb-4 p-4 bg-white/10 rounded-lg border border-white/20">
+        <h3 class="text-lg font-bold text-white mb-2">📋 Game Rules</h3>
+        <ul class="text-sm text-slate-300 text-left space-y-1">
+          <li>✅ <strong>Click asteroids</strong> (colorful) to score <span class="text-green-400">+1 point</span></li>
+          <li>❌ <strong>Click debris</strong> (red-outlined) to lose <span class="text-red-400">1 life</span></li>
+          <li>⚠️ <strong>Miss an asteroid</strong> (goes off-screen) to lose <span class="text-yellow-400">1 point</span></li>
+          <li>💔 You have <strong>3 lives</strong> — game over when you lose all lives!</li>
+        </ul>
+      </div>
+
+      <!-- Start/Restart Button -->
+      <div id="startScreen" class="mb-4">
         <button 
-          id="modeStatic" 
-          role="radio"
-          aria-checked="true"
-          class="px-4 py-2 rounded-lg bg-indigo-500 text-white font-medium transition-all hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          id="startBtn"
+          class="px-8 py-3 text-xl font-bold rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white transition-all hover:from-indigo-600 hover:to-purple-700 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-lg shadow-purple-500/50 animate-pulse"
         >
-          Static Mode
-        </button>
-        <button 
-          id="modeFalling" 
-          role="radio"
-          aria-checked="false"
-          class="px-4 py-2 rounded-lg bg-slate-600 text-white font-medium transition-all hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-        >
-          Falling Mode
+          🚀 Start Game
         </button>
       </div>
 
       <canvas
         id="gameCanvas"
-        width="700"
-        height="500"
+        width="900"
+        height="700"
         class="rounded-lg shadow-lg border border-slate-600 bg-slate-900/70 touch-none"
+        style="display: none;"
         role="img"
         aria-label="Game canvas with moving asteroid"
         tabindex="0"
       ></canvas>
 
-      <p class="mt-6 text-xl text-slate-200">
-        Score: <span id="score" class="font-bold text-indigo-400" aria-live="polite">0</span>
-      </p>
+      <div id="gameStats" style="display: none;">
+        <p class="mt-6 text-xl text-slate-200">
+          Score: <span id="score" class="font-bold text-indigo-400" aria-live="polite">0</span>
+          <span class="mx-4">|</span>
+          Lives: <span id="lives" class="font-bold text-red-400" aria-live="polite">3</span> ❤️
+        </p>
+      </div>
+
+      <div id="gameOver" style="display: none;" class="mt-6">
+        <h2 class="text-2xl font-bold text-red-400 mb-3">Game Over!</h2>
+        <p class="text-lg text-slate-300 mb-4">Final Score: <span id="finalScore" class="font-bold text-indigo-400">0</span></p>
+        <button 
+          id="restartBtn"
+          class="px-6 py-3 text-lg font-bold rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white transition-all hover:from-indigo-600 hover:to-purple-700 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-lg"
+        >
+          🔄 Play Again
+        </button>
+      </div>
 
       <p class="mt-2 text-sm text-slate-400">
-        Press Space or click to target the asteroid. Use Tab to navigate.
+        Click asteroids to score points. Use Tab to navigate.
       </p>
 
       <div class="mt-8">
@@ -87,17 +104,22 @@ import Layout from "../layouts/Layout.astro";
     if (!ctx) throw new Error("2D context not supported");
 
     const scoreEl = document.getElementById("score");
-    const modeStaticBtn = document.getElementById("modeStatic");
-    const modeFallingBtn = document.getElementById("modeFalling");
-    
-    if (!modeStaticBtn || !modeFallingBtn) throw new Error("Mode buttons not found");
+    const livesEl = document.getElementById("lives");
+    const finalScoreEl = document.getElementById("finalScore");
+    const startBtn = document.getElementById("startBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const startScreen = document.getElementById("startScreen");
+    const gameStats = document.getElementById("gameStats");
+    const gameOverScreen = document.getElementById("gameOver");
 
-    let asteroid = { x: 100, y: 100, size: 40, velocityY: 0, rotation: 0, color: 0, shape: [], moveTimer: 0 };
+    let asteroid = { x: 100, y: 100, size: 40, velocityY: 0, velocityX: 0, rotation: 0, color: 0, shape: [], trail: [] };
+    let obstacles = [];
     let score = 0;
-    let gameMode = 'static';
+    let lives = 3;
+    let gameRunning = false;
     let animationId = null;
     let particles = [];
-    let lastTime = 0;
+    let invulnerable = false;
 
     // Generate random asteroid shape with variation
     function generateAsteroidShape() {
@@ -120,6 +142,27 @@ import Layout from "../layouts/Layout.astro";
         { start: "#88ffaa", mid: "#66dd88", end: "#44bb66" }
       ];
       return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function drawFireTrail() {
+      // Draw fire trail behind asteroid
+      asteroid.trail.forEach((pos, i) => {
+        const alpha = (i / asteroid.trail.length) * 0.6;
+        const size = asteroid.size * 0.7 * (i / asteroid.trail.length);
+        
+        const gradient = ctx.createRadialGradient(
+          pos.x, pos.y, 0,
+          pos.x, pos.y, size
+        );
+        gradient.addColorStop(0, `rgba(255, 220, 100, ${alpha})`);
+        gradient.addColorStop(0.5, `rgba(255, 100, 50, ${alpha * 0.7})`);
+        gradient.addColorStop(1, `rgba(255, 50, 0, ${alpha * 0.3})`);
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+        ctx.fill();
+      });
     }
 
     function drawAsteroid() {
@@ -200,85 +243,211 @@ import Layout from "../layouts/Layout.astro";
       }
     }
 
-    function moveAsteroid() {
-      asteroid.x = Math.random() * (canvas.width - asteroid.size * 2) + asteroid.size;
-      asteroid.y = Math.random() * (canvas.height - asteroid.size * 2) + asteroid.size;
-      asteroid.velocityY = 0;
-      asteroid.rotation = Math.random() * Math.PI * 2;
-      asteroid.shape = generateAsteroidShape();
-      asteroid.color = getAsteroidColor();
-    }
+
 
     function spawnFallingAsteroid() {
       asteroid.x = Math.random() * (canvas.width - asteroid.size * 2) + asteroid.size;
       asteroid.y = -asteroid.size;
-      asteroid.velocityY = 2 + Math.random() * 2;
+      // Random direction - mostly down but with some horizontal drift
+      const angle = (Math.PI / 2) + (Math.random() - 0.5) * (Math.PI / 3);
+      const speed = 2 + Math.random() * 2;
+      asteroid.velocityX = Math.cos(angle) * speed * 0.5;
+      asteroid.velocityY = Math.sin(angle) * speed;
       asteroid.rotation = Math.random() * Math.PI * 2;
       asteroid.shape = generateAsteroidShape();
       asteroid.color = getAsteroidColor();
+      asteroid.trail = [];
+    }
+
+    // Space debris (obstacles)
+    function createObstacle() {
+      const size = 20 + Math.random() * 25;
+      const x = Math.random() * canvas.width;
+      const angle = (Math.PI / 2) + (Math.random() - 0.5) * (Math.PI / 2);
+      const speed = 1.5 + Math.random() * 2.5;
+      
+      return {
+        x,
+        y: -size,
+        size,
+        velocityX: Math.cos(angle) * speed * 0.6,
+        velocityY: Math.sin(angle) * speed,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.08,
+        type: Math.random() > 0.5 ? 'debris' : 'satellite'
+      };
+    }
+
+    function drawObstacle(obs) {
+      ctx.save();
+      ctx.translate(obs.x, obs.y);
+      ctx.rotate(obs.rotation);
+      
+      if (obs.type === 'debris') {
+        // Metallic space debris
+        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, obs.size);
+        gradient.addColorStop(0, "#aaaaaa");
+        gradient.addColorStop(0.5, "#777777");
+        gradient.addColorStop(1, "#444444");
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.moveTo(-obs.size, 0);
+        ctx.lineTo(0, -obs.size * 0.7);
+        ctx.lineTo(obs.size, 0);
+        ctx.lineTo(0, obs.size * 0.7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "#ff4444";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      } else {
+        // Broken satellite
+        ctx.fillStyle = "#666666";
+        ctx.fillRect(-obs.size * 0.6, -obs.size * 0.4, obs.size * 1.2, obs.size * 0.8);
+        
+        ctx.fillStyle = "#ff4444";
+        ctx.fillRect(-obs.size * 0.9, -obs.size * 0.15, obs.size * 0.3, obs.size * 0.3);
+        ctx.fillRect(obs.size * 0.6, -obs.size * 0.15, obs.size * 0.3, obs.size * 0.3);
+        
+        ctx.strokeStyle = "#ffaa00";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-obs.size * 0.6, -obs.size * 0.4, obs.size * 1.2, obs.size * 0.8);
+      }
+      
+      ctx.restore();
+    }
+
+    function updateObstacles() {
+      // Spawn new obstacles (reduced spawn rate to make it easier)
+      if (gameRunning && Math.random() < 0.008) {
+        obstacles.push(createObstacle());
+      }
+      
+      // Update and remove off-screen obstacles
+      obstacles = obstacles.filter(obs => {
+        obs.x += obs.velocityX;
+        obs.y += obs.velocityY;
+        obs.rotation += obs.rotationSpeed;
+        return obs.y < canvas.height + obs.size * 2;
+      });
+    }
+
+    function loseLife() {
+      lives--;
+      if (livesEl) livesEl.textContent = String(lives);
+      
+      invulnerable = true;
+      setTimeout(() => { invulnerable = false; }, 1500);
+      
+      // Flash effect
+      let flashes = 0;
+      const flashInterval = setInterval(() => {
+        canvas.style.opacity = flashes % 2 === 0 ? '0.3' : '1';
+        flashes++;
+        if (flashes > 6) {
+          clearInterval(flashInterval);
+          canvas.style.opacity = '1';
+        }
+      }, 150);
+      
+      if (lives <= 0) {
+        endGame();
+      }
+    }
+
+    function endGame() {
+      gameRunning = false;
+      if (animationId) cancelAnimationFrame(animationId);
+      if (finalScoreEl) finalScoreEl.textContent = String(score);
+      canvas.style.display = 'none';
+      gameStats.style.display = 'none';
+      const gameRules = document.getElementById('gameRules');
+      if (gameRules) gameRules.style.display = 'block';
+      gameOverScreen.style.display = 'block';
+    }
+
+    function startGame() {
+      score = 0;
+      lives = 3;
+      obstacles = [];
+      particles = [];
+      invulnerable = false;
+      gameRunning = true;
+      
+      if (scoreEl) scoreEl.textContent = '0';
+      if (livesEl) livesEl.textContent = '3';
+      
+      startScreen.style.display = 'none';
+      gameOverScreen.style.display = 'none';
+      const gameRules = document.getElementById('gameRules');
+      if (gameRules) gameRules.style.display = 'none';
+      canvas.style.display = 'block';
+      gameStats.style.display = 'block';
+      
+      startGameMode();
     }
 
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw fire trail first
+      drawFireTrail();
+      
+      // Draw obstacles
+      obstacles.forEach(obs => drawObstacle(obs));
+      
+      // Draw asteroid with flash effect if invulnerable
+      if (invulnerable && Math.floor(Date.now() / 100) % 2 === 0) {
+        ctx.globalAlpha = 0.5;
+      }
       drawAsteroid();
+      ctx.globalAlpha = 1;
+      
       drawParticles();
     }
 
-    function animateStatic(currentTime) {
-      const deltaTime = currentTime - lastTime;
-      lastTime = currentTime;
-      
-      // Update move timer
-      asteroid.moveTimer += deltaTime;
-      if (asteroid.moveTimer >= 2000) {
-        moveAsteroid();
-        asteroid.moveTimer = 0;
-      }
-      
-      // Slow rotation
-      asteroid.rotation += 0.005;
-      
-      render();
-      animationId = requestAnimationFrame(animateStatic);
-    }
+
 
     function animateFalling() {
+      if (!gameRunning) return;
+      
+      // Update trail positions
+      asteroid.trail.push({ x: asteroid.x, y: asteroid.y });
+      if (asteroid.trail.length > 15) {
+        asteroid.trail.shift();
+      }
+      
+      asteroid.x += asteroid.velocityX;
       asteroid.y += asteroid.velocityY;
       asteroid.rotation += 0.02;
       
-      // Reset if off screen
+      // Bounce off walls
+      if (asteroid.x < asteroid.size || asteroid.x > canvas.width - asteroid.size) {
+        asteroid.velocityX *= -1;
+      }
+      
+      // Reset if off screen - penalty for missing
       if (asteroid.y > canvas.height + asteroid.size) {
+        // Lose a point for missing (but can't go below 0)
+        if (score > 0) {
+          score--;
+          if (scoreEl) scoreEl.textContent = String(score);
+        }
         spawnFallingAsteroid();
       }
       
+      updateObstacles();
       render();
       animationId = requestAnimationFrame(animateFalling);
     }
 
-    function setGameMode(mode) {
-      gameMode = mode;
-      
+    function startGameMode() {
       // Stop existing animations
       if (animationId) cancelAnimationFrame(animationId);
       
-      // Update button styles and ARIA
-      if (mode === 'static') {
-        modeStaticBtn.className = "px-4 py-2 rounded-lg bg-indigo-500 text-white font-medium transition-all hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400";
-        modeStaticBtn.setAttribute('aria-checked', 'true');
-        modeFallingBtn.className = "px-4 py-2 rounded-lg bg-slate-600 text-white font-medium transition-all hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-400";
-        modeFallingBtn.setAttribute('aria-checked', 'false');
-        moveAsteroid();
-        asteroid.moveTimer = 0;
-        lastTime = performance.now();
-        animationId = requestAnimationFrame(animateStatic);
-      } else {
-        modeFallingBtn.className = "px-4 py-2 rounded-lg bg-indigo-500 text-white font-medium transition-all hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400";
-        modeFallingBtn.setAttribute('aria-checked', 'true');
-        modeStaticBtn.className = "px-4 py-2 rounded-lg bg-slate-600 text-white font-medium transition-all hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-400";
-        modeStaticBtn.setAttribute('aria-checked', 'false');
-        spawnFallingAsteroid();
-        animateFalling();
-      }
+      spawnFallingAsteroid();
+      animateFalling();
     }
 
     function handleHit() {
@@ -290,12 +459,7 @@ import Layout from "../layouts/Layout.astro";
       
       // Immediate feedback - respawn with new properties
       setTimeout(() => {
-        if (gameMode === 'static') {
-          moveAsteroid();
-          asteroid.moveTimer = 0;
-        } else {
-          spawnFallingAsteroid();
-        }
+        spawnFallingAsteroid();
       }, 100);
     }
 
@@ -306,12 +470,35 @@ import Layout from "../layouts/Layout.astro";
       return dist < asteroid.size;
     }
 
+    function checkObstacleClick(clickX, clickY) {
+      for (let obs of obstacles) {
+        const dist = Math.sqrt(
+          (clickX - obs.x) ** 2 + (clickY - obs.y) ** 2
+        );
+        if (dist < obs.size) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     // Mouse/touch click handler
     canvas.addEventListener("click", (e) => {
+      if (!gameRunning) return;
+      
       const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const clickX = (e.clientX - rect.left) * scaleX;
+      const clickY = (e.clientY - rect.top) * scaleY;
 
+      // Check if clicked on obstacle first
+      if (checkObstacleClick(clickX, clickY)) {
+        loseLife();
+        return;
+      }
+
+      // Then check if clicked on asteroid
       if (checkHit(clickX, clickY)) {
         handleHit();
       }
@@ -319,59 +506,48 @@ import Layout from "../layouts/Layout.astro";
 
     // Touch support for mobile
     canvas.addEventListener("touchstart", (e) => {
+      if (!gameRunning) return;
+      
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
       const touch = e.touches[0];
-      const clickX = touch.clientX - rect.left;
-      const clickY = touch.clientY - rect.top;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const clickX = (touch.clientX - rect.left) * scaleX;
+      const clickY = (touch.clientY - rect.top) * scaleY;
 
+      // Check if clicked on obstacle first
+      if (checkObstacleClick(clickX, clickY)) {
+        loseLife();
+        return;
+      }
+
+      // Then check if clicked on asteroid
       if (checkHit(clickX, clickY)) {
         handleHit();
       }
     });
 
-    // Keyboard accessibility - just shoot at asteroid when space/enter pressed
-    canvas.addEventListener("keydown", (e) => {
-      if (e.key === " " || e.key === "Enter") {
-        e.preventDefault();
-        // Auto-hit when using keyboard
-        handleHit();
-      }
-    });
 
-    // Mode button handlers
-    modeStaticBtn.addEventListener("click", () => setGameMode('static'));
-    modeFallingBtn.addEventListener("click", () => setGameMode('falling'));
 
-    // Keyboard support for mode buttons
-    modeStaticBtn.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        setGameMode('static');
-      }
-    });
-    modeFallingBtn.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        setGameMode('falling');
-      }
-    });
+
+
+    // Start and restart handlers
+    if (startBtn) startBtn.addEventListener("click", startGame);
+    if (restartBtn) restartBtn.addEventListener("click", startGame);
 
     // Make canvas responsive
     function resizeCanvas() {
       const container = canvas.parentElement;
       if (container) {
-        const maxWidth = Math.min(700, container.clientWidth - 32);
-        const scale = maxWidth / 700;
+        const maxWidth = Math.min(900, container.clientWidth - 32);
+        const scale = maxWidth / 900;
         canvas.style.width = maxWidth + 'px';
-        canvas.style.height = (500 * scale) + 'px';
+        canvas.style.height = (700 * scale) + 'px';
       }
     }
 
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-
-    // Initialize
-    setGameMode('static');
   </script>
 </Layout>
