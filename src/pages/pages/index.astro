@@ -66,7 +66,7 @@ import Layout from "../layouts/Layout.astro";
       </div>
 
       <p class="mt-2 text-sm text-slate-400">
-        Click asteroids to score points. Use Tab to navigate.
+        Click asteroids to score points, avoid debris, and survive as long as you can!
       </p>
 
       <div class="mt-8">
@@ -148,7 +148,7 @@ import Layout from "../layouts/Layout.astro";
       // Draw fire trail behind asteroid
       asteroid.trail.forEach((pos, i) => {
         const alpha = (i / asteroid.trail.length) * 0.6;
-        const size = asteroid.size * 0.7 * (i / asteroid.trail.length);
+        const size = asteroid.size * 1.2 * (i / asteroid.trail.length);
         
         const gradient = ctx.createRadialGradient(
           pos.x, pos.y, 0,
@@ -414,7 +414,7 @@ import Layout from "../layouts/Layout.astro";
       
       // Update trail positions
       asteroid.trail.push({ x: asteroid.x, y: asteroid.y });
-      if (asteroid.trail.length > 15) {
+      if (asteroid.trail.length > 25) {
         asteroid.trail.shift();
       }
       
