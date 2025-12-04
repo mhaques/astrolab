@@ -1,19 +1,28 @@
 # Astrolab
 
-**Astrolab** is a small & fun demo built with [Astro](https://astro.build/) and [TailwindCSS](https://tailwindcss.com/).  
-It includes a mini game where you try to **click on a moving asteroid** before it disappears.  
-Great for experimenting with interactivity, front-end animations, and a lightweight project setup.
+**Astrolab** is a fun interactive game built with [Astro](https://astro.build/) featuring **two game modes**, smooth animations, and particle effects.  
+Click (or tap) the moving asteroids to score points — each asteroid is uniquely generated with random shapes, colors, and crater patterns!
 
 ---
 
 ## 🚀 Features
 
-- Modern responsive UI with **TailwindCSS** styling  
-- Simple asteroid-clicking game with **score tracking**  
-- Game logic written in **vanilla JavaScript**  
-- Pages styled with **Astro layouts**  
-- Navigation between **Home / About / Game**  
-- Footer with GitHub links & credits  
+- **Two Game Modes**
+  - **Static Mode**: Click asteroids that teleport every 2 seconds with smooth rotation
+  - **Falling Mode**: Catch asteroids falling from the top with varying speeds
+- **Visual Polish**
+  - Unique asteroid generation with random shapes, colors (4 color schemes), and crater patterns
+  - Particle explosion effects on successful hits (20 particles with physics)
+  - Smooth 60fps animations using requestAnimationFrame
+  - Gradient-filled asteroids with realistic details
+- **Accessibility**
+  - Full keyboard navigation (Space/Enter to shoot, Tab to navigate)
+  - ARIA labels and live regions for screen readers
+  - Focus indicators on interactive elements
+- **Mobile Responsive**
+  - Touch event support for mobile devices
+  - Responsive canvas scaling
+  - Touch-optimized controls with preventDefault
 
 ---
 
@@ -23,8 +32,9 @@ Great for experimenting with interactivity, front-end animations, and a lightwei
 |----------------|----------------------------------|
 | **Astro**      | Static site framework            |
 | **Tailwind**   | Utility-first CSS styling        |
-| **JavaScript** | Game logic (canvas + events)     |
-| **HTML/CSS**   | Layout & presentation            |
+| **Canvas API** | Game rendering & animations      |
+| **JavaScript** | Game logic (60fps animations)    |
+| **Bootstrap**  | Additional UI components         |
 
 
 ---
@@ -63,30 +73,71 @@ npm run preview
 
 ---
 
-## ⚙️ Game Rules
+## 🎮 Game Modes
 
-- An orange **asteroid** appears at random positions inside the canvas.  
-- Every **2 seconds**, the asteroid moves.  
-- Click the asteroid before it moves to earn **1 point**.  
-- Score updates instantly under the canvas.  
+### Static Mode
+- Asteroids teleport to random positions every 2 seconds
+- Slow continuous rotation for visual appeal
+- Classic click-to-hit gameplay
+
+### Falling Mode
+- Asteroids fall from the top with varying speeds
+- Faster rotation for dynamic effect
+- More challenging as asteroids move continuously
+
+---
+
+## 🎯 Controls
+
+- **Mouse/Touch**: Click or tap asteroids to score points
+- **Keyboard**: Press Space or Enter to auto-hit (accessibility feature)
+- **Mode Switching**: Click mode buttons or use Tab + Enter to switch
+
+---
+
+## ⚙️ Game Features
+
+- Unique **asteroid generation** with irregular shapes (8-12 sided polygons)
+- **4 color schemes**: Orange, Purple, Pink, and Green asteroids
+- Dynamic **crater patterns** (2-4 craters per asteroid)
+- **Particle explosions** with 20 particles, gravity, and fade-out effects
+- **Smooth 60fps** animations in both game modes
+- **Responsive canvas** that scales on mobile devices  
 
 ---
 
 ## 🔗 Links
 
 - GitHub Repo: [mhaques/astrolab](https://github.com/mhaques/astrolab)  
-- Live Demo: [here!](https://astrolabgame.netlify.app)
+- Created by: [mhaques](https://github.com/mhaques)
 
 ---
 
-## 📃 To do:
+## 📂 Project Structure
 
-Contributions are welcome! Ideas include:
+```
+astrolab/
+├── src/
+│   └── pages/
+│       ├── index.astro          # Homepage with welcome screen
+│       ├── layouts/
+│       │   └── Layout.astro     # Base layout component
+│       ├── pages/
+│       │   └── index.astro      # Game page (/pages route)
+│       └── styles/
+│           └── global.css       # Global styles
+├── public/
+│   └── bootstrap.min.css        # Bootstrap CSS
+└── README.md
+```
 
-- Add more game modes (falling asteroids, shrinking time window).  
-- Improve visuals (explosions, particle effects, smoother animations maybe).  
-- Accessibility improvements (keyboard navigation, ARIA labels).  
-- Mobile responsiveness tweaks.  
+---
+
+## 🌟 Credits
+
+Created by [mhaques](https://github.com/mhaques)
+
+⭐ Star this repo if you enjoy the game!
 
 ---
 
